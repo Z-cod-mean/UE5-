@@ -1,0 +1,70 @@
+第一步：
+在 PublicDependencyModuleNames 函数调用中，将 "EnhancedInput" 添加到模块列表中：
+PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+
+打开角色的 .h 文件。在文件顶部附近位置添加以下include语句：
+
+#include "EnhancedInputComponent.h" 添加增强输入组件模块。
+
+#include "InputActionValue.h" 启用对输入操作所产生的输入操作值的访问。
+
+#include "EnhancedInputSubsystems.h" 实现对本地玩家子系统的访问。
+
+第二步：
+在 #include 语句后声明下列三项新类：
+
+UInputMappingContext
+
+UInputAction
+
+UInputComponent
+
+第三步：
+声明InputMappingContext指针
+在角色的.h文件的protected小节中，使用TObjectPtr添加一个名为FirstPersonContext的新UInputMappingContext指针。 这是一个指向输入映射上下文的指针，可将你的输入操作与按键操作关联起来。
+
+*TObjectPtr 是虚幻引擎中的一种智能指针封装器，能更为安全地引用 UObject 派生的类型。 它是一种原始 UObject 指针的替代品，支持编辑器感知、对垃圾回收安全。 它是一种硬引用，因此会在运行时保持对象加载。 使用虚幻引擎编程时，建议用这种方式声明指针。*
+*（Controller）是指向拥有此Actor的控制器的指针。要让移动功能正常工作，控制器必须有效。*
+
+*使用SetupPlayerInputComponent将移动绑定至输入
+接下来，将你的Move函数关联到你之前声明的FirstPersonContext输入映射上下文。
+
+执行此操作的函数SetupPlayerInputComponent()已经由角色的.cpp文件定义，因为它继承自ACharacter。 此函数会使用UInputComponent，并使用它来设置玩家输入。
+
+检查增强输入组件
+默认情况下，此函数首先会调用来自于ACharacter的SetupPlayerInputComponent()函数，该函数会检查角色上是否存在输入组件。*
+
+第四步检查:
+请在if语句中声明一个名为EnhancedInputComponent的新UEnhancedInputComponent指针。 将此值设为在将传入到此函数的PlayerInputComponent转换为UEnhancedInputComponent时调用CastChecked()函数所得到的结果。
+void AAdventureCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+{
+
+}
+
+第五步绑定移动操作:
+在if语句内部，调用来自于EnhancedInputComponent的BindAction()函数。
+
+向该函数传递以下参数：
+
+MoveAction：需绑定的输入操作（角色的.h文件中已声明）。
+
+来自 ETriggeredEvent 的 触发事件 ：事件的触发类型。
+
+this：要绑定的目标角色。
+
+Move()：需绑定函数的引用。
+
+
+ 代码：
+	if (APlayerController* PlayerController = Cast< APlayerController >(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(FirstPersonContext, 0);
+		}
+	}
+
+  解释:这段代码在游戏启动或角色生成时，
+为当前玩家启用一个输入映射上下文（FirstPersonContext），
+确保该玩家的键盘/鼠标输入被 Enhanced Input 系统识别并触发相应动作
